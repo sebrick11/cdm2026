@@ -1394,26 +1394,27 @@ function init() {
             database.ref('users/' + user.uid).get().then(snap => {
                 if (snap.exists()) {
                     const data = snap.val();
-                    const firstname = data.firstname || '';
-                    const fullName  = data.name || firstname || user.email;
+                    const fullName  = data.name || user.email;
+                    // Prénom : champ dédié ou premier mot du nom complet
+                    const firstname = data.firstname || fullName.split(' ')[0];
                     // displayName = nom complet (utilisé pour les pronostics)
                     user.displayName = fullName;
                     // Stocker le prénom globalement
-                    currentFirstname = firstname || fullName;
+                    currentFirstname = firstname;
                     // Header et Mon Espace : afficher uniquement le prénom
                     document.getElementById('authUserName').textContent = '👤 ' + currentFirstname;
                     document.getElementById('meUserName').textContent = currentFirstname;
                 } else {
                     user.displayName = user.email;
-                    currentFirstname = user.email;
-                    document.getElementById('authUserName').textContent = '👤 ' + user.email;
-                    document.getElementById('meUserName').textContent = user.email;
+                    currentFirstname = user.email.split('@')[0];
+                    document.getElementById('authUserName').textContent = '👤 ' + currentFirstname;
+                    document.getElementById('meUserName').textContent = currentFirstname;
                 }
             }).catch(() => {
                 user.displayName = user.email;
-                currentFirstname = user.email;
-                document.getElementById('authUserName').textContent = '👤 ' + user.email;
-                document.getElementById('meUserName').textContent = user.email;
+                currentFirstname = user.email.split('@')[0];
+                document.getElementById('authUserName').textContent = '👤 ' + currentFirstname;
+                document.getElementById('meUserName').textContent = currentFirstname;
             });
 
             // Pas d'écouteur Firebase séparé : Mon Espace lit directement appState.predictions
