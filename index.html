@@ -958,7 +958,8 @@
 
         <!-- Formulaire inscription -->
         <div id="registerForm" style="display:none">
-            <input type="text" id="registerName" class="auth-input" placeholder="Prénom Nom (ex: Alice Martin)">
+            <input type="text" id="registerFirstname" class="auth-input" placeholder="Prénom (ex: Alice)">
+            <input type="text" id="registerLastname" class="auth-input" placeholder="Nom (ex: Martin)">
             <input type="email" id="registerEmail" class="auth-input" placeholder="Adresse email">
             <input type="password" id="registerPassword" class="auth-input" placeholder="Mot de passe (6 caractères min.)">
             <button class="auth-btn" onclick="registerUser()">Créer mon compte</button>
@@ -1296,14 +1297,19 @@ async function loginUser() {
 }
 
 async function registerUser() {
-    const name = document.getElementById('registerName').value.trim();
-    const email = document.getElementById('registerEmail').value.trim();
-    const pwd = document.getElementById('registerPassword').value;
-    if (!name) { showAuthError('Entre ton prénom et nom.'); return; }
+    const firstname = document.getElementById('registerFirstname').value.trim();
+    const lastname  = document.getElementById('registerLastname').value.trim();
+    const email     = document.getElementById('registerEmail').value.trim();
+    const pwd       = document.getElementById('registerPassword').value;
+    if (!firstname) { showAuthError('Entre ton prénom.'); return; }
+    if (!lastname)  { showAuthError('Entre ton nom.'); return; }
+    const fullName = firstname + ' ' + lastname;
     try {
         const cred = await auth.createUserWithEmailAndPassword(email, pwd);
-        // Sauvegarder le nom dans Firebase
-        await database.ref('users/' + cred.user.uid + '/name').set(name);
+        // Sauvegarder prénom, nom et email dans Firebase
+        await database.ref('users/' + cred.user.uid + '/firstname').set(firstname);
+        await database.ref('users/' + cred.user.uid + '/lastname').set(lastname);
+        await database.ref('users/' + cred.user.uid + '/name').set(fullName);
         await database.ref('users/' + cred.user.uid + '/email').set(email);
     } catch(e) {
         const msgs = {
@@ -1383,12 +1389,23 @@ function init() {
             document.querySelectorAll('.admin-only').forEach(el =>
                 el.style.display = user.email === ADMIN_EMAIL ? '' : 'none');
 
-            // Récupérer le nom
-            database.ref('users/' + user.uid + '/name').get().then(snap => {
-                const name = snap.exists() ? snap.val() : user.email;
-                user.displayName = name;
-                document.getElementById('authUserName').textContent = '👤 ' + name;
-                document.getElementById('meUserName').textContent = name;
+            // Récupérer prénom + nom complet depuis Firebase
+            database.ref('users/' + user.uid).get().then(snap => {
+                if (snap.exists()) {
+                    const data = snap.val();
+                    const firstname = data.firstname || '';
+                    const fullName  = data.name || firstname || user.email;
+                    // displayName = nom complet (utilisé pour les pronostics)
+                    user.displayName = fullName;
+                    // Header et Mon Espace : afficher uniquement le prénom
+                    const displayLabel = firstname || fullName;
+                    document.getElementById('authUserName').textContent = '👤 ' + displayLabel;
+                    document.getElementById('meUserName').textContent = displayLabel;
+                } else {
+                    user.displayName = user.email;
+                    document.getElementById('authUserName').textContent = '👤 ' + user.email;
+                    document.getElementById('meUserName').textContent = user.email;
+                }
             }).catch(() => {
                 user.displayName = user.email;
                 document.getElementById('authUserName').textContent = '👤 ' + user.email;
