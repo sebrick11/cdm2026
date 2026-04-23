@@ -1265,6 +1265,7 @@
 
         let appState = { participants: [], scores: {}, predictions: {}, darkMode: false };
         let myPredictions = {}; // pronostics de l'utilisateur connecté, mis à jour en temps réel
+        let currentFirstname = null; // prénom seul pour l'affichage
 
         // ── AUTH ──────────────────────────────────────────────
 function showAuthTab(tab) {
@@ -1397,17 +1398,20 @@ function init() {
                     const fullName  = data.name || firstname || user.email;
                     // displayName = nom complet (utilisé pour les pronostics)
                     user.displayName = fullName;
+                    // Stocker le prénom globalement
+                    currentFirstname = firstname || fullName;
                     // Header et Mon Espace : afficher uniquement le prénom
-                    const displayLabel = firstname || fullName;
-                    document.getElementById('authUserName').textContent = '👤 ' + displayLabel;
-                    document.getElementById('meUserName').textContent = displayLabel;
+                    document.getElementById('authUserName').textContent = '👤 ' + currentFirstname;
+                    document.getElementById('meUserName').textContent = currentFirstname;
                 } else {
                     user.displayName = user.email;
+                    currentFirstname = user.email;
                     document.getElementById('authUserName').textContent = '👤 ' + user.email;
                     document.getElementById('meUserName').textContent = user.email;
                 }
             }).catch(() => {
                 user.displayName = user.email;
+                currentFirstname = user.email;
                 document.getElementById('authUserName').textContent = '👤 ' + user.email;
                 document.getElementById('meUserName').textContent = user.email;
             });
@@ -1421,6 +1425,7 @@ function init() {
         } else {
             currentUser = null;
             myPredictions = {};
+            currentFirstname = null;
             // Détacher l'écouteur si présent
             if (auth.currentUser === null && useFirebase) {
                 try { database.ref('users').off(); } catch(e) {}
@@ -1511,7 +1516,8 @@ function init() {
         function renderMonEspace() {
             if (!currentUser) return;
             const rawName = currentUser.displayName || currentUser.email;
-            document.getElementById('meUserName').textContent = rawName;
+            // Afficher le prénom uniquement (ou nom complet si prénom non disponible)
+            document.getElementById('meUserName').textContent = currentFirstname || rawName;
 
             // Recherche insensible à la casse : le nom Firebase peut différer de la casse
             // du participant dans appState (ex: "Sébastien" vs "SÉBASTIEN")
